@@ -1,0 +1,79 @@
+/* =========================================================
+   Design tokens — Presensi
+   Semua nilai visual aplikasi didefinisikan di sini.
+   ========================================================= */
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../vendor/plus-jakarta-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../vendor/plus-jakarta-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  /* Warna inti */
+  --navy-950: #060d23;
+  --navy-900: #08102b;
+  --navy-800: #0b1636;
+  --navy-700: #12224c;
+  --navy-600: #1b3169;
+
+  --ink: #0b1437;
+  --ink-soft: #253055;
+  --muted: #6c7793;
+  --muted-2: #94a0bb;
+  --line: #e7eaf3;
+  --line-soft: #f1f3f9;
+
+  --surface: #eef2f9;
+  --surface-2: #f7f9fd;
+  --card: #ffffff;
+
+  /* Aksen */
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #12813c;
+  --green-soft: #e8faef;
+
+  --amber-500: #f59e0b;
+  --amber-soft: #fff5e2;
+
+  --red-500: #ef4444;
+  --red-soft: #fdecec;
+
+  /* Bentuk & bayangan */
+  --radius-xl: 22px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+
+  --shadow-card: 0 10px 28px rgba(9, 18, 45, 0.08);
+  --shadow-float: 0 18px 50px rgba(9, 18, 45, 0.18);
+
+  /* Tipografi */
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+
+  /* Layout */
+  --app-width: 430px;
+
+  /* Bootstrap override */
+  --bs-body-font-family: var(--font-sans);
+  --bs-body-color: var(--ink);
+  --bs-border-color: var(--line);
+}

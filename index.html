@@ -1,0 +1,380 @@
+﻿<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0A1431">
+  <title>Presensi — PT Sinar Nusantara</title>
+
+  <link rel="stylesheet" href="vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="page">
+  <main class="phone" id="phone">
+
+    <!-- ============ HERO ============ -->
+    <header class="hero">
+      <div class="hero-top">
+        <span class="brand-pill">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/>
+            </svg>
+          </span>
+          <span class="brand-name" id="brand-name">PT Sinar Nusantara</span>
+        </span>
+
+        <span class="hero-badges">
+          <span class="demo-badge" id="demo-badge" hidden>DEMO</span>
+          <button class="icon-btn" id="btn-logout" type="button" aria-label="Keluar" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h10"/>
+            </svg>
+          </button>
+        </span>
+      </div>
+
+      <div class="clock-wrap">
+        <span class="clock" id="clock">--:--</span>
+        <span class="clock-sec" id="clock-sec">00</span>
+      </div>
+      <p class="hero-date" id="hero-date">Memuat tanggal…</p>
+    </header>
+
+    <!-- ============ CONTENT ============ -->
+    <div class="content">
+
+      <!-- ---------- LOGIN ---------- -->
+      <section class="screen" id="screen-login">
+        <div class="panel panel-notch">
+          <h1 class="panel-title">Masuk untuk presensi</h1>
+
+          <form id="login-form" novalidate>
+            <label class="field">
+              <span class="field-label">NIP</span>
+              <input class="field-input" id="nip" name="nip" type="text" inputmode="numeric"
+                     autocomplete="username" placeholder="Masukkan NIP" maxlength="20" required>
+            </label>
+
+            <label class="field">
+              <span class="field-label">PIN</span>
+              <span class="field-row">
+                <input class="field-input" id="pin" name="pin" type="password" inputmode="numeric"
+                       autocomplete="current-password" placeholder="Masukkan PIN" maxlength="12" required>
+                <button class="field-eye" id="toggle-pin" type="button" aria-label="Tampilkan PIN">
+                  <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/>
+                  </svg>
+                  <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden>
+                    <path d="M3 3l18 18"/><path d="M10.6 6.2A9.9 9.9 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.1 3.6"/><path d="M6.2 7.4A17 17 0 0 0 2 12s3.5 6 10 6a9.7 9.7 0 0 0 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
+                  </svg>
+                </button>
+              </span>
+            </label>
+
+            <p class="form-error" id="login-error" role="alert" hidden></p>
+
+            <button class="btn-main" id="btn-login" type="submit">
+              <span class="btn-label">Masuk</span>
+              <span class="btn-spinner" hidden aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <p class="demo-hint" id="demo-hint" hidden>
+            Akun demo: NIP <b>1001</b> · PIN <b>1234</b>
+          </p>
+        </div>
+
+        <p class="privacy-note">
+          Presensi online — lokasi &amp; foto hanya diambil saat absen.
+        </p>
+      </section>
+
+      <!-- ---------- HOME / PRESENSI ---------- -->
+      <section class="screen" id="screen-home" hidden>
+        <div class="panel employee-card">
+          <span class="avatar" id="emp-avatar">AF</span>
+          <span class="emp-main">
+            <span class="emp-name" id="emp-name">—</span>
+            <span class="emp-role" id="emp-role">—</span>
+          </span>
+          <span class="online-dot" title="Terhubung"></span>
+        </div>
+
+        <div class="panel shift-card">
+          <div class="shift-col">
+            <span class="shift-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><path d="M12 7v4l2.5 1.5"/>
+              </svg>
+            </span>
+            <span class="shift-label">Masuk</span>
+            <span class="shift-time" id="shift-in">--:--</span>
+            <span class="shift-plan">Jadwal <b id="plan-in">08:00</b></span>
+          </div>
+          <span class="shift-divider"></span>
+          <div class="shift-col">
+            <span class="shift-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><path d="M12 7v4l-2.5 1.5"/>
+              </svg>
+            </span>
+            <span class="shift-label">Pulang</span>
+            <span class="shift-time" id="shift-out">--:--</span>
+            <span class="shift-plan">Jadwal <b id="plan-out">16:00</b></span>
+          </div>
+        </div>
+
+        <div class="panel status-card" id="home-status"><!-- diisi JS --></div>
+
+        <p class="home-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>
+          </svg>
+          Pastikan GPS aktif. Jarak dihitung ulang di server saat absen dikirim.
+        </p>
+      </section>
+
+      <!-- ---------- RIWAYAT ---------- -->
+      <section class="screen" id="screen-history" hidden>
+        <div class="section-head">
+          <h1 class="section-title">Riwayat absensi</h1>
+        </div>
+
+        <div class="month-nav">
+          <button class="month-btn" id="hist-prev" type="button" aria-label="Bulan sebelumnya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <span class="month-label" id="hist-month">—</span>
+          <button class="month-btn" id="hist-next" type="button" aria-label="Bulan berikutnya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <div class="panel summary-card">
+          <div class="summary-item">
+            <span class="summary-value" id="sum-hadir">0</span>
+            <span class="summary-label">Hadir</span>
+          </div>
+          <span class="summary-divider"></span>
+          <div class="summary-item">
+            <span class="summary-value" id="sum-late">0</span>
+            <span class="summary-label">Terlambat</span>
+          </div>
+          <span class="summary-divider"></span>
+          <div class="summary-item">
+            <span class="summary-value" id="sum-avg">--:--</span>
+            <span class="summary-label">Rata-rata masuk</span>
+          </div>
+        </div>
+
+        <div class="history-list" id="history-list"><!-- diisi JS --></div>
+
+        <p class="empty-state" id="history-empty" hidden>
+          Belum ada catatan absensi di bulan ini.
+        </p>
+      </section>
+
+      <!-- ---------- PROFIL ---------- -->
+      <section class="screen" id="screen-profile" hidden>
+        <div class="panel profile-card">
+          <span class="avatar avatar-lg" id="prof-avatar">AF</span>
+          <span class="emp-name" id="prof-name">—</span>
+          <span class="emp-role" id="prof-role">—</span>
+          <span class="badge-soft badge-green" id="prof-device">Perangkat terdaftar</span>
+        </div>
+
+        <div class="panel info-card">
+          <div class="info-row"><span>NIP</span><b id="prof-nip">—</b></div>
+          <div class="info-row"><span>Lokasi kerja</span><b id="prof-site">—</b></div>
+          <div class="info-row"><span>Radius</span><b id="prof-radius">—</b></div>
+          <div class="info-row"><span>Shift</span><b id="prof-shift">—</b></div>
+        </div>
+
+        <div class="panel info-card">
+          <div class="info-row switch-row">
+            <span>
+              Simulasi di luar radius
+              <small>Hanya untuk pengujian alur.</small>
+            </span>
+            <span class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" role="switch" id="toggle-outside">
+            </span>
+          </div>
+        </div>
+
+        <button class="btn-danger-ghost" id="btn-logout-2" type="button">Keluar dari akun</button>
+
+        <button class="link-btn" id="reset-demo" type="button" hidden>Reset data demo</button>
+
+        <p class="version-note">Presensi v0.1 · frontend demo</p>
+      </section>
+
+    </div>
+
+    <!-- ============ TABBAR ============ -->
+    <nav class="tabbar" id="tabbar" hidden aria-label="Navigasi utama">
+      <button class="tab is-active" data-tab="home" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><path d="m9 10 2 2 4-4"/>
+        </svg>
+        <span>Presensi</span>
+      </button>
+      <button class="tab" data-tab="history" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+        </svg>
+        <span>Riwayat</span>
+      </button>
+      <button class="tab" data-tab="profile" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/>
+        </svg>
+        <span>Profil</span>
+      </button>
+    </nav>
+
+    <!-- ============ OVERLAY: LOKASI ============ -->
+    <div class="overlay overlay-sheet" id="ov-locate" hidden>
+      <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="loc-title">
+        <span class="sheet-icon" id="loc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/>
+          </svg>
+        </span>
+
+        <h2 class="sheet-title" id="loc-title">Memeriksa lokasi…</h2>
+        <p class="sheet-sub" id="loc-sub">Pastikan GPS aktif dan kamu berada di area kantor.</p>
+
+        <div class="loc-progress" id="loc-progress">
+          <div class="pulse-ring"><span></span></div>
+          <span class="loc-accuracy">Akurasi: <b id="loc-acc">—</b></span>
+        </div>
+
+        <div class="loc-result" id="loc-result" hidden>
+          <div class="loc-row"><span>Lokasi</span><b id="loc-site">—</b></div>
+          <div class="loc-row"><span>Jarak</span><b id="loc-dist">—</b></div>
+          <div class="loc-row"><span>Radius</span><b id="loc-radius">—</b></div>
+          <div class="loc-row"><span>Akurasi</span><b id="loc-acc2">—</b></div>
+        </div>
+
+        <div class="sheet-actions">
+          <button class="btn-ghost" id="loc-cancel" type="button">Batal</button>
+          <button class="btn-main" id="loc-retry" type="button" hidden>Coba Lagi</button>
+          <button class="btn-main" id="loc-continue" type="button" hidden>Lanjut Foto</button>
+        </div>
+
+        <button class="link-btn" id="loc-correct" type="button" hidden>Ajukan koreksi absensi</button>
+      </div>
+    </div>
+
+    <!-- ============ OVERLAY: KAMERA ============ -->
+    <div class="overlay overlay-dark" id="ov-camera" hidden>
+      <div class="cam-top">
+        <button class="cam-close" id="cam-close" type="button" aria-label="Tutup kamera">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <span class="cam-title">Ambil selfie</span>
+        <span class="cam-step">2 / 3</span>
+      </div>
+
+      <div class="cam-stage">
+        <video id="cam-video" playsinline autoplay muted></video>
+        <div class="cam-guide" aria-hidden="true"></div>
+        <p class="cam-hint" id="cam-hint">Posisikan wajah di dalam lingkaran</p>
+      </div>
+
+      <div class="cam-bottom">
+        <button class="link-btn link-light" id="cam-demo" type="button" hidden>Gunakan foto contoh (demo)</button>
+        <button class="shutter" id="cam-shutter" type="button" aria-label="Ambil foto"><span></span></button>
+      </div>
+    </div>
+
+    <!-- ============ OVERLAY: PRATINJAU ============ -->
+    <div class="overlay overlay-dark" id="ov-preview" hidden>
+      <div class="prev-top">
+        <button class="cam-close" id="prev-back" type="button" aria-label="Kembali">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <span class="cam-title">Pratinjau foto</span>
+        <span class="cam-step">2 / 3</span>
+      </div>
+
+      <div class="prev-stage">
+        <img id="prev-img" alt="Pratinjau foto selfie">
+      </div>
+
+      <div class="prev-actions">
+        <button class="btn-ghost-light" id="prev-retake" type="button">Ulangi</button>
+        <button class="btn-main" id="prev-submit" type="button">
+          <span class="btn-label">Kirim Absen</span>
+          <span class="btn-spinner" hidden aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ OVERLAY: SUKSES ============ -->
+    <div class="overlay overlay-light" id="ov-success" hidden>
+      <div class="success-card">
+        <span class="success-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+        </span>
+        <h2 class="success-title" id="succ-title">Absen masuk tercatat</h2>
+        <div class="success-time" id="succ-time">--:--</div>
+        <span class="badge-soft badge-green" id="succ-badge">Tepat waktu</span>
+        <p class="success-meta" id="succ-meta">—</p>
+        <button class="btn-main" id="succ-done" type="button">Selesai</button>
+      </div>
+    </div>
+
+    <!-- ============ TOAST ============ -->
+    <div class="toast-wrap" id="toast-wrap" aria-live="polite"></div>
+
+  </main>
+</div>
+
+<!-- ============ MODAL DETAIL RIWAYAT ============ -->
+<div class="modal fade" id="detail-modal" tabindex="-1" aria-labelledby="detail-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content detail-content">
+      <div class="modal-header detail-head">
+        <div>
+          <h2 class="detail-title" id="detail-title">Detail absensi</h2>
+          <p class="detail-sub" id="detail-sub">—</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+      <div class="modal-body detail-body">
+        <div class="detail-grid">
+          <div class="detail-item"><span>Masuk</span><b id="detail-in">--:--</b></div>
+          <div class="detail-item"><span>Pulang</span><b id="detail-out">--:--</b></div>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-item"><span>Status</span><b id="detail-status">—</b></div>
+          <div class="detail-item"><span>Jarak</span><b id="detail-dist">—</b></div>
+        </div>
+        <div class="detail-note">
+          <span class="detail-thumb" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.2-1.6h5.6L16 5"/>
+            </svg>
+          </span>
+          <span>
+            <b>Foto verifikasi tersimpan</b>
+            <small id="detail-photo-note">Foto hanya disimpan untuk keperluan verifikasi.</small>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/bootstrap.bundle.min.js"></script>
+<script src="config.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

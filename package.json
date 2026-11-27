@@ -1,0 +1,10 @@
+{
+  "name": "presensi-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend presensi statis (Bootstrap 5 + vanilla JS) untuk GitHub Pages",
+  "scripts": {
+    "dev": "bun run dev-server.js"
+  }
+}
