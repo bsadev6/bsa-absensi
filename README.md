@@ -29,11 +29,14 @@ Akun demo: **NIP 1001 / PIN 1234**.
 ## Alur yang sudah ada
 
 1. **Login** NIP + PIN.
-2. **Verifikasi lokasi** (simulasi GPS dengan akurasi yang membaik).
-3. **Selfie** lewat `getUserMedia`, crop 3:4, watermark nama/jam/koordinat.
-4. **Kirim absen** + layar sukses.
-5. **Riwayat** per bulan + ringkasan + modal detail.
-6. **Profil** + simulasi "di luar radius" untuk menguji state gagal.
+2. **Beranda** menampilkan peta area kantor (Leaflet + OpenStreetMap), posisi
+   pengguna, jarak, dan akurasi. Tombol **Absen Masuk** dan **Absen Pulang**
+   terpisah, aktif hanya saat lokasi terverifikasi di dalam radius.
+3. **Verifikasi lokasi** (simulasi GPS dengan akurasi yang membaik).
+4. **Selfie** lewat `getUserMedia`, crop 3:4, watermark nama/jam/koordinat.
+5. **Kirim absen** + layar sukses.
+6. **Riwayat** per bulan + ringkasan + modal detail.
+7. **Profil** + simulasi "di luar radius" untuk menguji state gagal.
 
 State gagal yang sudah ditangani: izin GPS ditolak, timeout, akurasi rendah,
 di luar radius, izin kamera ditolak, dan kamera tidak tersedia (fallback foto
@@ -43,18 +46,19 @@ demo saat `DEMO_MODE`).
 
 ```
 index.html            semua layar + overlay
-config.js             API base URL, mode demo, shift, ambang akurasi
+config.js             API base URL, mode demo, shift, ambang akurasi, titik kantor demo
 css/tokens.css        font + design token
 css/app.css           seluruh styling aplikasi
 js/app.js             state machine & orkestrasi UI
 js/api.js             lapisan API + data demo
 js/clock.js           jam tersinkron server
 js/geo.js             watchPosition + pemilihan sampel terbaik
+js/map.js             peta Leaflet: area kantor + posisi pengguna
 js/camera.js          getUserMedia, crop, watermark, JPEG
 js/time.js            helper waktu zona Asia/Jakarta
 js/ui.js              helper DOM, toast, ikon
 dev-server.js         server statis lokal (Bun)
-vendor/               Bootstrap 5.3.3 + font (self-host)
+vendor/               Bootstrap 5.3.3, Leaflet 1.9.4, font (self-host)
 ```
 
 ## Beralih ke backend nyata
@@ -67,8 +71,8 @@ vendor/               Bootstrap 5.3.3 + font (self-host)
 | Method | Path | Keterangan |
 |---|---|---|
 | POST | `/auth/login` | `{ nip, pin }` → `{ token, employee }` |
-| POST | `/attendance/location-check` | `{ lat, lng, accuracy }` → `{ inside, distance, site, token, expiresAt }` |
-| POST | `/attendance/punch` | multipart: `photo`, `token`, `lat`, `lng`, `accuracy`, `type` |
+| POST | `/attendance/location-check` | `{ lat, lng, accuracy }` → `{ inside, distance, site, token, expiresAt }`; `site` berisi `{ id, name, lat, lng, radius }` |
+| POST | `/attendance/punch` | multipart: `photo`, `token`, `lat`, `lng`, `accuracy`, `type` (`in`/`out`) |
 | GET | `/attendance/history?month=YYYY-MM` | daftar absensi |
 | GET | `/attendance/today` | absensi hari ini |
 | GET | `/time` | `{ now: <epoch ms> }` untuk sinkron jam |
@@ -87,6 +91,8 @@ Token dari `location-check` **wajib** dikirim saat punch. Backend harus:
 - `.nojekyll` sudah disertakan.
 - `config.js` bisa diganti tanpa rebuild.
 - Jangan taruh secret apa pun di frontend.
+- Peta memakai tile OpenStreetMap. Untuk trafik produksi yang ramai, ganti ke
+  tile provider berbayar atau self-host agar tidak melanggar usage policy OSM.
 
 ## Catatan keamanan
 

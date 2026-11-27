@@ -6,6 +6,7 @@
 import { api } from "./api.js";
 import { syncClock, startClock, serverNow } from "./clock.js";
 import { locate } from "./geo.js";
+import { renderOffice, renderLocation, resizeMap } from "./map.js";
 import {
   startCamera,
   stopCamera,
@@ -41,6 +42,8 @@ const state = {
   simulateOutside: false,
   cameraFallback: false,
   busy: false,
+  presenceBusy: false,
+  presenceStale: false,
   locateAbort: null,
 };
 
@@ -83,6 +86,14 @@ function bindEvents() {
   $("#hist-prev").addEventListener("click", () => shiftMonth(-1));
   $("#hist-next").addEventListener("click", () => shiftMonth(1));
 
+  $("#btn-check-in").addEventListener("click", () => startFlow("in"));
+  $("#btn-check-out").addEventListener("click", () => startFlow("out"));
+  $("#map-refresh").addEventListener("click", refreshPresence);
+  $("#map-retry").addEventListener("click", refreshPresence);
+  $("#home-correct").addEventListener("click", () => {
+    toast("Pengajuan koreksi akan tersedia di versi berikutnya.");
+  });
+
   $("#loc-cancel").addEventListener("click", closeLocate);
   $("#loc-retry").addEventListener("click", runLocation);
   $("#loc-continue").addEventListener("click", () => {
@@ -114,6 +125,8 @@ function bindEvents() {
         ? "Simulasi aktif: lokasi akan dianggap di luar radius."
         : "Simulasi luar radius dimatikan."
     );
+    if (state.screen === "home") refreshPresence();
+    else state.presenceStale = true;
   });
 
   $("#reset-demo").addEventListener("click", () => {
@@ -149,6 +162,14 @@ function showScreen(name) {
 
   if (name === "history") renderHistory();
   if (name === "profile") renderProfile();
+  if (name === "home") {
+    if (state.employee && state.presenceStale) {
+      state.presenceStale = false;
+      refreshPresence();
+    } else {
+      resizeMap();
+    }
+  }
 
   window.scrollTo({ top: 0 });
 }
@@ -180,8 +201,8 @@ async function onLogin(event) {
     state.today = await api.today();
 
     $("#pin").value = "";
-    renderHome();
     showScreen("home");
+    renderHome();
   } catch (err) {
     errorEl.textContent = err.message || "Gagal masuk. Coba lagi.";
     errorEl.hidden = false;
@@ -210,6 +231,11 @@ async function logout() {
   stopCamera();
   hideAllOverlays();
 
+  if (state.locateAbort) {
+    state.locateAbort.abort();
+    state.locateAbort = null;
+  }
+
   state.employee = null;
   state.token = null;
   state.today = null;
@@ -217,6 +243,7 @@ async function logout() {
   state.coords = null;
   state.photo = null;
   state.simulateOutside = false;
+  state.presenceStale = false;
   $("#toggle-outside").checked = false;
 
   $("#login-form").reset();
@@ -240,91 +267,198 @@ function renderHome() {
   $("#shift-in").textContent = rec?.in || "--:--";
   $("#shift-out").textContent = rec?.out || "--:--";
 
-  renderStatusCard(rec);
+  renderOffice(emp.site);
+  renderPresence();
+  updateActions();
+
+  if (!state.location && !state.presenceBusy) refreshPresence();
 }
 
-function badgeFor(record) {
-  if (!record) return el("span", "badge-soft badge-gray", "Belum absen");
-  if (record.status === "terlambat") {
-    return el(
-      "span",
-      "badge-soft badge-amber",
-      `Terlambat ${record.lateMinutes} menit`
-    );
-  }
-  return el("span", "badge-soft badge-green", "Tepat waktu");
+function setBadge(kind, text) {
+  const badge = $("#presence-badge");
+  badge.className = `badge-soft ${kind}`;
+  badge.textContent = text;
 }
 
-function renderStatusCard(record) {
-  const box = $("#home-status");
-  box.replaceChildren();
+function setPresenceChecking() {
+  $("#presence-icon").className = "status-icon";
+  $("#presence-icon").replaceChildren(icon("pin", 22));
+  $("#presence-title").textContent = "Memeriksa lokasi…";
+  $("#presence-sub").textContent = "Menentukan posisi kamu terhadap area kantor.";
+  setBadge("badge-gray", "—");
 
-  const head = el("div", "status-head");
-  const iconWrap = el("span", "status-icon");
-  const textWrap = el("div");
+  $("#map-overlay").hidden = false;
+  $("#map-spinner").hidden = false;
+  $("#map-overlay-text").textContent = "Mencari lokasi…";
+  $("#map-retry").hidden = true;
+  $("#map-meta-text").textContent = "Akurasi —";
+  $("#map-refresh").disabled = true;
+  $("#home-correct").hidden = true;
+}
 
-  if (!record || !record.in) {
-    iconWrap.appendChild(icon("pin", 22));
-    textWrap.append(
-      el("div", "status-title", "Belum absen masuk"),
-      el(
-        "div",
-        "status-sub",
-        `Jadwal ${state.employee.shift.start} · toleransi ${CFG.SHIFT.lateToleranceMinutes} menit`
-      )
-    );
-    head.append(iconWrap, textWrap);
+function renderPresence() {
+  const emp = state.employee;
+  if (!emp) return;
 
-    const button = el("button", "btn-main", "Mulai Absen");
-    button.type = "button";
-    button.addEventListener("click", () => startFlow("in"));
-
-    box.append(head, button);
+  const loc = state.location;
+  if (!loc) {
+    setPresenceChecking();
     return;
   }
 
-  if (!record.out) {
-    iconWrap.classList.add("ok");
-    iconWrap.appendChild(icon("check", 22));
-    textWrap.append(
-      el("div", "status-title", "Sudah absen masuk"),
-      el("div", "status-sub", `${record.distance} m dari ${record.site}`)
-    );
-    head.append(iconWrap, textWrap);
+  const site = loc.site || emp.site;
 
-    const big = el("div", "status-big", record.in);
-    const badge = badgeFor(record);
+  renderLocation({ user: state.coords, site });
 
-    const button = el("button", "btn-main", "Absen Pulang");
-    button.type = "button";
-    button.addEventListener("click", () => startFlow("out"));
+  $("#map-overlay").hidden = true;
+  $("#map-refresh").disabled = false;
+  $("#map-meta-text").textContent = state.coords
+    ? `Akurasi ${state.coords.accuracy} m · radius ${site.radius} m`
+    : `Radius ${site.radius} m`;
 
-    box.append(head, big, badge, button);
+  const lowAccuracy =
+    state.coords && state.coords.accuracy > CFG.LOCATION.maxAccuracy;
+
+  $("#home-correct").hidden = loc.inside;
+
+  if (!loc.inside) {
+    $("#presence-icon").className = "status-icon warn";
+    $("#presence-icon").replaceChildren(icon("alert", 22));
+    $("#presence-title").textContent = "Di luar area kantor";
+    $("#presence-sub").textContent = `${loc.distance} m dari ${site.name}`;
+    setBadge("badge-amber", "Di luar radius");
     return;
   }
 
-  iconWrap.classList.add("ok");
-  iconWrap.appendChild(icon("check", 22));
-  textWrap.append(
-    el("div", "status-title", "Presensi hari ini selesai"),
-    el("div", "status-sub", `${record.distance} m dari ${record.site}`)
-  );
-  head.append(iconWrap, textWrap);
+  if (lowAccuracy) {
+    $("#presence-icon").className = "status-icon warn";
+    $("#presence-icon").replaceChildren(icon("alert", 22));
+    $("#presence-title").textContent = "Akurasi lokasi rendah";
+    $("#presence-sub").textContent = `Akurasi ${state.coords.accuracy} m. Pindah ke area terbuka lalu perbarui.`;
+    setBadge("badge-amber", "Kurang akurat");
+    return;
+  }
 
-  const big = el("div", "status-big", `${record.in} — ${record.out}`);
-  const badge = el("span", "badge-soft badge-green", "Lengkap");
+  $("#presence-icon").className = "status-icon ok";
+  $("#presence-icon").replaceChildren(icon("check", 22));
+  $("#presence-title").textContent = "Di area kantor";
+  $("#presence-sub").textContent = `${loc.distance} m dari ${site.name}`;
+  setBadge("badge-green", "Tepat lokasi");
+}
 
-  const button = el("button", "btn-ghost", "Lihat Riwayat");
-  button.type = "button";
-  button.addEventListener("click", () => showScreen("history"));
+function renderPresenceError(err) {
+  const titles = {
+    denied: "Izin lokasi ditolak",
+    timeout: "Lokasi tidak terdeteksi",
+    unsupported: "GPS tidak didukung",
+  };
 
-  box.append(head, big, badge, button);
+  $("#presence-icon").className = "status-icon warn";
+  $("#presence-icon").replaceChildren(icon("alert", 22));
+  $("#presence-title").textContent = titles[err.code] || "Lokasi belum terverifikasi";
+  $("#presence-sub").textContent = err.message || "Perbarui lokasi untuk mencoba lagi.";
+  setBadge("badge-amber", "Belum terverifikasi");
+
+  $("#map-overlay").hidden = false;
+  $("#map-spinner").hidden = true;
+  $("#map-overlay-text").textContent = err.message || "Lokasi tidak tersedia.";
+  $("#map-retry").hidden = false;
+  $("#map-refresh").disabled = false;
+  $("#home-correct").hidden = true;
+}
+
+async function refreshPresence() {
+  if (!state.employee || state.presenceBusy) return;
+
+  state.presenceBusy = true;
+  state.presenceStale = false;
+  state.location = null;
+
+  if (state.locateAbort) state.locateAbort.abort();
+  state.locateAbort = new AbortController();
+  const signal = state.locateAbort.signal;
+
+  setPresenceChecking();
+  updateActions();
+
+  try {
+    const coords = await locate({
+      demo: DEMO,
+      outside: state.simulateOutside,
+      signal,
+      onProgress: (sample) => {
+        $("#map-meta-text").textContent = `Mencari sinyal · akurasi ${sample.accuracy} m`;
+      },
+    });
+    state.coords = coords;
+
+    const result = await api.locationCheck({
+      ...coords,
+      simulateOutside: state.simulateOutside,
+      token: state.token,
+    });
+
+    state.location = result;
+    renderPresence();
+  } catch (err) {
+    if (err.code !== "aborted") renderPresenceError(err);
+  } finally {
+    state.presenceBusy = false;
+    updateActions();
+  }
+}
+
+function isLocationReady() {
+  const loc = state.location;
+  if (!loc?.inside) return false;
+  if (state.coords && state.coords.accuracy > CFG.LOCATION.maxAccuracy) return false;
+  return true;
+}
+
+function updateActions() {
+  const rec = state.today;
+  const ready = isLocationReady();
+  const hasIn = Boolean(rec?.in);
+  const hasOut = Boolean(rec?.out);
+
+  $("#btn-check-in").disabled = !ready || hasIn;
+  $("#btn-check-out").disabled = !ready || !hasIn || hasOut;
+
+  let note = "Tombol aktif setelah lokasi terverifikasi di area kantor.";
+
+  const lowAccuracy =
+    state.coords && state.coords.accuracy > CFG.LOCATION.maxAccuracy;
+
+  if (hasIn && hasOut) {
+    note = "Presensi hari ini selesai. Terima kasih.";
+  } else if (state.location && !state.location.inside) {
+    note = "Kamu di luar radius kantor. Dekati lokasi lalu tekan Perbarui.";
+  } else if (lowAccuracy) {
+    note = "Akurasi GPS rendah. Pindah ke area terbuka lalu tekan Perbarui.";
+  } else if (hasIn) {
+    note = "Kamu sudah absen masuk. Absen pulang bisa dilakukan sekarang.";
+  } else if (ready) {
+    note = "Lokasi terverifikasi. Pilih absen masuk atau pulang.";
+  }
+
+  $("#action-note").textContent = note;
 }
 
 function startFlow(type) {
   if (state.busy) return;
+
+  if (!isLocationReady()) {
+    toast("Lokasi belum terverifikasi. Perbarui lokasi dulu.", "err");
+    refreshPresence();
+    return;
+  }
+
   if (type === "in" && state.today?.in) {
     toast("Kamu sudah absen masuk hari ini.");
+    return;
+  }
+  if (type === "out" && !state.today?.in) {
+    toast("Absen masuk dulu sebelum absen pulang.");
     return;
   }
   if (type === "out" && state.today?.out) {
@@ -333,7 +467,15 @@ function startFlow(type) {
   }
 
   state.pendingType = type;
-  openLocate();
+
+  // Token lokasi masih segar -> langsung ke kamera, tanpa ulang verifikasi.
+  const fresh =
+    state.location?.token &&
+    (!state.location.expiresAt ||
+      state.location.expiresAt - Date.now() > 15000);
+
+  if (fresh) openCamera();
+  else openLocate();
 }
 
 /* ----------------------------- lokasi ----------------------------- */
@@ -341,6 +483,7 @@ function startFlow(type) {
 function openLocate() {
   state.location = null;
   state.coords = null;
+  state.photo = null;
 
   $("#ov-locate").hidden = false;
   refreshScrollLock();
@@ -380,6 +523,7 @@ async function runLocation() {
   try {
     const coords = await locate({
       demo: DEMO,
+      outside: state.simulateOutside,
       signal,
       onProgress: (sample) => {
         $("#loc-acc").textContent = `${sample.accuracy} m`;
@@ -469,6 +613,15 @@ function closeLocate() {
   }
   $("#ov-locate").hidden = true;
   refreshScrollLock();
+
+  if (state.screen === "home") {
+    if (state.location) {
+      renderPresence();
+      updateActions();
+    } else {
+      refreshPresence();
+    }
+  }
 }
 
 /* ----------------------------- kamera ----------------------------- */
@@ -504,6 +657,11 @@ async function openCamera() {
 
 async function takePhoto() {
   if (state.busy) return;
+  if ($("#ov-camera").hidden) return;
+  if (!state.coords) {
+    toast("Lokasi belum siap. Tunggu verifikasi lokasi selesai.", "err");
+    return;
+  }
 
   const meta = {
     name: state.employee?.name || "",
@@ -533,6 +691,7 @@ function backToCamera() {
 
 function useDemoPhoto() {
   if (!DEMO) return;
+  if ($("#ov-camera").hidden) return;
   state.cameraFallback = true;
   stopCamera();
   $("#cam-video").hidden = true;
@@ -541,6 +700,7 @@ function useDemoPhoto() {
 
 function closeCamera() {
   stopCamera();
+  state.photo = null;
   $("#ov-camera").hidden = true;
   $("#ov-preview").hidden = true;
   refreshScrollLock();
@@ -550,6 +710,7 @@ function closeCamera() {
 
 async function submitAttendance() {
   if (state.busy) return;
+  if ($("#ov-preview").hidden) return;
   if (!state.photo || !state.location?.token) {
     toast("Sesi verifikasi tidak lengkap. Ulangi dari awal.", "err");
     closeCamera();
@@ -568,6 +729,7 @@ async function submitAttendance() {
     });
 
     state.today = result.record;
+    if (state.location) state.location.token = null;
 
     stopCamera();
     $("#ov-preview").hidden = true;

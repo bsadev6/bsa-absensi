@@ -8,6 +8,7 @@
   <title>Presensi — PT Bintang Selatan Agung</title>
 
   <link rel="stylesheet" href="vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/app.css">
 </head>
@@ -129,7 +130,47 @@
           </div>
         </div>
 
-        <div class="panel status-card" id="home-status"><!-- diisi JS --></div>
+        <div class="panel presence-card">
+          <div class="presence-head">
+            <span class="status-icon" id="presence-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/>
+              </svg>
+            </span>
+            <span class="presence-text">
+              <span class="status-title" id="presence-title">Memeriksa lokasi…</span>
+              <span class="status-sub" id="presence-sub">Menentukan posisi kamu terhadap area kantor.</span>
+            </span>
+            <span class="badge-soft badge-gray" id="presence-badge">—</span>
+          </div>
+
+          <div class="map-wrap">
+            <div class="map-canvas" id="home-map"></div>
+            <div class="map-overlay" id="map-overlay">
+              <span class="map-spinner" id="map-spinner" aria-hidden="true"></span>
+              <span id="map-overlay-text">Mencari lokasi…</span>
+              <button class="map-retry" id="map-retry" type="button" hidden>Coba Lagi</button>
+            </div>
+          </div>
+
+          <div class="map-meta">
+            <span id="map-meta-text">Akurasi —</span>
+            <button class="map-refresh" id="map-refresh" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>
+              </svg>
+              Perbarui
+            </button>
+          </div>
+
+          <div class="action-row">
+            <button class="btn-main" id="btn-check-in" type="button">Absen Masuk</button>
+            <button class="btn-ghost" id="btn-check-out" type="button">Absen Pulang</button>
+          </div>
+
+          <p class="action-note" id="action-note">Absen pulang aktif setelah absen masuk.</p>
+          <button class="link-btn" id="home-correct" type="button" hidden>Ajukan koreksi lokasi</button>
+        </div>
 
         <p class="home-note">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -374,6 +415,7 @@
 </div>
 
 <script src="vendor/bootstrap.bundle.min.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="config.js"></script>
 <script type="module" src="js/app.js"></script>
 </body>

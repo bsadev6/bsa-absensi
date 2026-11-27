@@ -28,6 +28,15 @@ window.APP_CONFIG = {
     timeoutMs: 15000,
   },
 
+  // Titik kantor untuk peta di mode demo. Saat backend aktif, koordinat
+  // site datang dari server (respons location-check), bukan dari sini.
+  SITE: {
+    name: "Kantor Pusat",
+    lat: -2.965847527086366,
+    lng: 104.70989501874661,
+    radius: 150,
+  },
+
   // Umur token verifikasi lokasi (detik).
   LOCATION_TOKEN_TTL_SECONDS: 180,
 

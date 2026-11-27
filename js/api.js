@@ -6,6 +6,7 @@
    Kontrak endpoint yang diasumsikan:
      POST /auth/login                     { nip, pin } -> { token, employee }
      POST /attendance/location-check      { lat, lng, accuracy } -> { inside, distance, site, token, expiresAt }
+                                          site: { id, name, lat, lng, radius }
      POST /attendance/punch               multipart: photo, token, lat, lng, accuracy, type
      GET  /attendance/history?month=YYYY-MM
      GET  /attendance/today
@@ -24,7 +25,13 @@ const EMPLOYEE = {
   name: "Andi Firmansyah",
   role: "Programmer, TI",
   initials: "AF",
-  site: { id: "site-hq", name: "Kantor Pusat", radius: 150 },
+  site: {
+    id: "site-hq",
+    name: CFG.SITE.name,
+    lat: CFG.SITE.lat,
+    lng: CFG.SITE.lng,
+    radius: CFG.SITE.radius,
+  },
   shift: { start: CFG.SHIFT.start, end: CFG.SHIFT.end },
   device: { label: "Chrome · Android", registered: true },
 };

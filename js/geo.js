@@ -17,22 +17,33 @@ export function locate({
   targetAccuracy = CFG.LOCATION.targetAccuracy,
   timeoutMs = CFG.LOCATION.timeoutMs,
   demo = false,
+  outside = false,
   signal,
 } = {}) {
-  if (demo) return demoLocate({ onProgress, signal, timeoutMs });
+  if (demo) return demoLocate({ onProgress, signal, timeoutMs, outside });
   return realLocate({ onProgress, targetAccuracy, timeoutMs, signal });
 }
 
 /* --------------------------- simulasi --------------------------- */
 
-function demoLocate({ onProgress, signal, timeoutMs }) {
-  const samples = [
-    { lat: -6.20882, lng: 106.84564, accuracy: 140 },
-    { lat: -6.20879, lng: 106.84561, accuracy: 96 },
-    { lat: -6.20876, lng: 106.84558, accuracy: 61 },
-    { lat: -6.20874, lng: 106.84555, accuracy: 42 },
-    { lat: -6.20873, lng: 106.84554, accuracy: 29 },
-  ];
+function demoLocate({ onProgress, signal, timeoutMs, outside = false }) {
+  const base = {
+    lat: CFG.SITE?.lat ?? -6.2088,
+    lng: CFG.SITE?.lng ?? 106.8457,
+  };
+
+  // Titik akhir: ~20 m dari kantor, atau ~428 m saat simulasi luar radius.
+  const spread = outside
+    ? { dLat: 0.00385, dLng: 0.0002 }
+    : { dLat: 0.00007, dLng: -0.00016 };
+
+  const factors = [1.25, 1.15, 1.08, 1.02, 1];
+  const accuracies = [140, 96, 61, 42, 29];
+  const samples = accuracies.map((accuracy, i) => ({
+    lat: base.lat + spread.dLat * factors[i],
+    lng: base.lng + spread.dLng * factors[i],
+    accuracy,
+  }));
 
   return new Promise((resolve, reject) => {
     let index = 0;
