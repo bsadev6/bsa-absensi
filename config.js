@@ -12,7 +12,7 @@ window.APP_CONFIG = {
   DEMO_MODE: true,
 
   TIMEZONE: "Asia/Jakarta",
-  COMPANY_NAME: "PT Sinar Nusantara",
+  COMPANY_NAME: "PT Bintang Selatan Agung",
 
   SHIFT: {
     start: "08:00",
