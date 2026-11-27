@@ -421,22 +421,25 @@ function updateActions() {
   const hasIn = Boolean(rec?.in);
   const hasOut = Boolean(rec?.out);
 
-  $("#btn-check-in").disabled = !ready || hasIn;
-  $("#btn-check-out").disabled = !ready || !hasIn || hasOut;
+  // Tombol sengaja tidak dimatikan karena absen sudah ada: user bisa salah
+  // klik atau perlu absen ulang. Server memakai jam masuk paling awal dan
+  // jam pulang paling akhir.
+  $("#btn-check-in").disabled = !ready;
+  $("#btn-check-out").disabled = !ready;
 
   let note = "Tombol aktif setelah lokasi terverifikasi di area kantor.";
 
   const lowAccuracy =
     state.coords && state.coords.accuracy > CFG.LOCATION.maxAccuracy;
 
-  if (hasIn && hasOut) {
-    note = "Presensi hari ini selesai. Terima kasih.";
-  } else if (state.location && !state.location.inside) {
+  if (state.location && !state.location.inside) {
     note = "Kamu di luar radius kantor. Dekati lokasi lalu tekan Perbarui.";
   } else if (lowAccuracy) {
     note = "Akurasi GPS rendah. Pindah ke area terbuka lalu tekan Perbarui.";
-  } else if (hasIn) {
-    note = "Kamu sudah absen masuk. Absen pulang bisa dilakukan sekarang.";
+  } else if (ready && hasIn && hasOut) {
+    note = "Presensi tercatat. Masih bisa absen lagi; sistem memakai jam masuk paling awal dan jam pulang paling akhir.";
+  } else if (ready && hasIn) {
+    note = "Sudah absen masuk. Masih bisa absen masuk atau pulang lagi bila perlu.";
   } else if (ready) {
     note = "Lokasi terverifikasi. Pilih absen masuk atau pulang.";
   }
@@ -450,19 +453,6 @@ function startFlow(type) {
   if (!isLocationReady()) {
     toast("Lokasi belum terverifikasi. Perbarui lokasi dulu.", "err");
     refreshPresence();
-    return;
-  }
-
-  if (type === "in" && state.today?.in) {
-    toast("Kamu sudah absen masuk hari ini.");
-    return;
-  }
-  if (type === "out" && !state.today?.in) {
-    toast("Absen masuk dulu sebelum absen pulang.");
-    return;
-  }
-  if (type === "out" && state.today?.out) {
-    toast("Kamu sudah absen pulang hari ini.");
     return;
   }
 
@@ -754,7 +744,7 @@ function showSuccess(result) {
   $("#succ-title").textContent = isIn
     ? "Absen masuk tercatat"
     : "Absen pulang tercatat";
-  $("#succ-time").textContent = result.time;
+  $("#succ-time").textContent = (isIn ? record.in : record.out) || result.time;
 
   const badge = $("#succ-badge");
   if (isIn && record.status === "terlambat") {
@@ -820,14 +810,15 @@ async function renderHistory() {
 }
 
 function renderSummary(records) {
-  const hadir = records.length;
-  const late = records.filter((r) => r.status === "terlambat").length;
+  const withIn = records.filter((r) => r.in);
+  const hadir = withIn.length;
+  const late = withIn.filter((r) => r.status === "terlambat").length;
 
   const avg =
     hadir === 0
       ? null
-      : records.reduce((sum, r) => {
-          const [h, m] = (r.in || "0:0").split(":").map(Number);
+      : withIn.reduce((sum, r) => {
+          const [h, m] = r.in.split(":").map(Number);
           return sum + h * 60 + m;
         }, 0) / hadir;
 
@@ -857,8 +848,9 @@ function historyItem(record) {
 
   main.appendChild(times);
 
-  const badge =
-    record.status === "terlambat"
+  const badge = !record.in
+    ? el("span", "badge-soft badge-amber", "Tanpa masuk")
+    : record.status === "terlambat"
       ? el("span", "badge-soft badge-amber", `Telat ${record.lateMinutes}m`)
       : el("span", "badge-soft badge-green", "Tepat");
 
@@ -885,8 +877,9 @@ function openDetail(record) {
   $("#detail-sub").textContent = fmtLongDate(date);
   $("#detail-in").textContent = record.in || "--:--";
   $("#detail-out").textContent = record.out || "--:--";
-  $("#detail-status").textContent =
-    record.status === "terlambat"
+  $("#detail-status").textContent = !record.in
+    ? "Belum absen masuk"
+    : record.status === "terlambat"
       ? `Terlambat ${record.lateMinutes} mnt`
       : "Tepat waktu";
   $("#detail-dist").textContent = `${record.distance} m`;

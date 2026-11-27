@@ -11,6 +11,9 @@
      GET  /attendance/history?month=YYYY-MM
      GET  /attendance/today
      GET  /time                           -> { now: <epoch ms> }
+
+   Absen boleh dikirim berulang. Backend menyimpan jam masuk paling awal
+   dan jam pulang paling akhir per tanggal.
    ========================================================= */
 
 import { getParts, fmtHM, dateKey, monthKey, toMinutes } from "./time.js";
@@ -230,29 +233,39 @@ export const api = {
     const hm = fmtHM();
     let record = store.records.find((r) => r.date === today);
 
+    const base = {
+      id: `rec-${today}`,
+      date: today,
+      in: null,
+      out: null,
+      distance: 20,
+      accuracy: Math.round(coords?.accuracy || 24),
+      site: EMPLOYEE.site.name,
+      source: "app",
+      status: "tepat",
+      lateMinutes: 0,
+    };
+
+    // Aturan: absen masuk memakai jam paling awal, absen pulang paling akhir.
     if (type === "in") {
-      if (record && record.in) throw new Error("Kamu sudah absen masuk hari ini.");
-      const status = computeStatus(hm);
-      record = record || {
-        id: `rec-${today}`,
-        date: today,
-        in: null,
-        out: null,
-        distance: 20,
-        accuracy: 24,
-        site: EMPLOYEE.site.name,
-        source: "app",
-      };
-      record.in = hm;
+      record = record || { ...base };
+      if (!record.in || toMinutes(hm) < toMinutes(record.in)) record.in = hm;
+      const status = computeStatus(record.in);
       record.status = status.status;
       record.lateMinutes = status.lateMinutes;
       record.distance = 20;
       record.accuracy = Math.round(coords?.accuracy || 24);
       if (!store.records.includes(record)) store.records.push(record);
     } else {
-      if (!record || !record.in) throw new Error("Kamu belum absen masuk hari ini.");
-      if (record.out) throw new Error("Kamu sudah absen pulang hari ini.");
-      record.out = hm;
+      record = record || { ...base };
+      if (!record.out || toMinutes(hm) > toMinutes(record.out)) record.out = hm;
+      record.distance = 20;
+      record.accuracy = Math.round(coords?.accuracy || 24);
+      if (!record.in) {
+        record.status = "tepat";
+        record.lateMinutes = 0;
+      }
+      if (!store.records.includes(record)) store.records.push(record);
     }
 
     saveStore(store);

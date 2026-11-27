@@ -82,6 +82,12 @@ Token dari `location-check` **wajib** dikirim saat punch. Backend harus:
 - memvalidasi TTL token dan mencocokkan koordinat saat punch,
 - menempel watermark otoritatif dan menyimpan foto di object storage.
 
+**Aturan absen berulang:** tombol absen tidak dikunci di frontend. User boleh
+mengirim absen masuk/pulang lebih dari sekali (mis. salah klik). Saat menyimpan,
+backend memakai **jam masuk paling awal** dan **jam pulang paling akhir** untuk
+setiap tanggal. Absen pulang tanpa absen masuk tetap dicatat, lalu ditandai
+sebagai anomali/tanpa masuk pada laporan.
+
 ## Deploy ke GitHub Pages
 
 - Repo ini memakai workflow `.github/workflows/deploy-pages.yml` yang mengunggah
