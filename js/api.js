@@ -118,11 +118,15 @@ function ensureStore() {
 
 /* ---------------------------- request ---------------------------- */
 
-async function request(path, { method = "GET", body, token } = {}) {
+// Token sesi disimpan di memori (bukan localStorage) dan dipakai otomatis
+// untuk semua request yang butuh login.
+let sessionToken = null;
+
+async function request(path, { method = "GET", body, auth = true } = {}) {
   const headers = {};
   const isForm = body instanceof FormData;
   if (body && !isForm) headers["Content-Type"] = "application/json";
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (auth && sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
 
   const res = await fetch(`${CFG.API_BASE_URL}${path}`, {
     method,
@@ -154,10 +158,17 @@ export const api = {
 
   async login(nip, pin) {
     if (!DEMO) {
-      return request("/auth/login", { method: "POST", body: { nip, pin } });
+      const data = await request("/auth/login", {
+        method: "POST",
+        body: { nip, pin },
+        auth: false,
+      });
+      sessionToken = data.token;
+      return data;
     }
     await delay(650);
     if (nip === "1001" && pin === "1234") {
+      sessionToken = "demo-token";
       return { token: "demo-token", employee: { ...EMPLOYEE } };
     }
     const err = new Error("NIP atau PIN salah. Coba lagi.");
@@ -168,14 +179,19 @@ export const api = {
   async logout() {
     if (DEMO) {
       await delay(150);
+      sessionToken = null;
       return { ok: true };
     }
-    return request("/auth/logout", { method: "POST" });
+    try {
+      return await request("/auth/logout", { method: "POST" });
+    } finally {
+      sessionToken = null;
+    }
   },
 
   async serverTime() {
     if (DEMO) return Date.now();
-    const data = await request("/time");
+    const data = await request("/time", { auth: false });
     return Number(data.now);
   },
 
@@ -183,11 +199,10 @@ export const api = {
    * Verifikasi lokasi di server. Server yang menentukan inside/outside.
    * Simulasi luar radius hanya aktif di DEMO_MODE.
    */
-  async locationCheck({ lat, lng, accuracy, simulateOutside = false, token }) {
+  async locationCheck({ lat, lng, accuracy, simulateOutside = false }) {
     if (!DEMO) {
       return request("/attendance/location-check", {
         method: "POST",
-        token,
         body: { lat, lng, accuracy },
       });
     }
@@ -223,7 +238,7 @@ export const api = {
       form.append("lng", String(coords.lng));
       form.append("accuracy", String(coords.accuracy));
       if (blob) form.append("photo", blob, "selfie.jpg");
-      return request("/attendance/punch", { method: "POST", token, body: form });
+      return request("/attendance/punch", { method: "POST", body: form });
     }
 
     await delay(1150);

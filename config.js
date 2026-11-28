@@ -45,3 +45,12 @@ window.APP_CONFIG = {
     quality: 0.85,
   },
 };
+
+/* Override mode lewat URL, berguna untuk menguji backend tanpa mengubah file:
+     ?demo=1  -> paksa mode simulasi
+     ?demo=0  -> paksa mode API (butuh backend hidup di API_BASE_URL) */
+(() => {
+  const mode = new URLSearchParams(window.location.search).get("demo");
+  if (mode === "1") window.APP_CONFIG.DEMO_MODE = true;
+  if (mode === "0") window.APP_CONFIG.DEMO_MODE = false;
+})();

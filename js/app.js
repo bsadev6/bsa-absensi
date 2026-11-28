@@ -395,7 +395,6 @@ async function refreshPresence() {
     const result = await api.locationCheck({
       ...coords,
       simulateOutside: state.simulateOutside,
-      token: state.token,
     });
 
     state.location = result;
@@ -525,7 +524,6 @@ async function runLocation() {
     const result = await api.locationCheck({
       ...coords,
       simulateOutside: state.simulateOutside,
-      token: state.token,
     });
 
     state.location = result;

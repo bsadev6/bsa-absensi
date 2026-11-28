@@ -63,10 +63,20 @@ vendor/               Bootstrap 5.3.3, Leaflet 1.9.4, font (self-host)
 
 ## Beralih ke backend nyata
 
+Backend Express + Postgres sudah ada di repo terpisah (lihat `backend/README.md`).
+
 1. Set `DEMO_MODE: false` di `config.js`.
 2. Set `API_BASE_URL` ke endpoint Express, mis. `https://api.domain.com/api`.
 3. Pastikan backend mengirim header CORS hanya untuk origin GitHub Pages.
-4. Kontrak endpoint yang diasumsikan ada di komentar `js/api.js`:
+
+Untuk mencoba backend tanpa mengubah file, pakai query string:
+
+```
+?demo=0   → paksa mode API (butuh backend hidup)
+?demo=1   → paksa mode simulasi
+```
+
+4. Kontrak endpoint yang dipakai ada di komentar `js/api.js`:
 
 | Method | Path | Keterangan |
 |---|---|---|
